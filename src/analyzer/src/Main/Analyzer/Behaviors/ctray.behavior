@@ -1,0 +1,45 @@
+behavior "CTray Injection" {
+
+    place [p0 p1 p2]
+    place p3 accepting
+
+    transition t0 {
+        NtUserFindWindowEx(_, _, name, class, _) -> windowHandle
+        where
+            ("Shell_TrayWnd" in name) or ("TrayNotifyWnd" in name)            
+    }
+
+    transition t1 {
+        NtOpenProcess(processHandle, _, _, _)
+    }
+
+    transition t2 {
+        NtAllocateVirtualMemory(processHandle, trayAddress, _, traySize, _, _)
+    }
+
+    transition t3 {
+        NtUserSetWindowLongPtr(windowHandle, index, address, _)
+        where
+            index == 0
+            address in [trayAddress .. (trayAddress + traySize)]
+    }
+
+    transition t4 {
+        NtUserSetWindowLong(windowHandle, index, address, _)
+        where
+            index == 0
+            address in [trayAddress .. (trayAddress + traySize)]
+    }
+
+    t0 -> p0
+
+    t1 -> p1 -> t2 -> p2
+
+    p0 -> t3
+    p0 -> t4
+    p2 -> t3
+    p2 -> t4
+
+    t3 -> p3
+    t4 -> p3
+}

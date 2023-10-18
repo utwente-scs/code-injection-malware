@@ -1,0 +1,40 @@
+behavior "Process Hollowing" {
+
+    place [p0 p1 p2 p3 p4 p5 p6 p7]
+    place p8 accepting
+
+    transition t0 {
+        NtCreateUserProcess(processHandle, threadHandle, _, _, _, _, _, _, _, _, _)
+    }
+
+    transition t1 {
+        NtUnmapViewOfSection(processHandle, _)
+    }
+
+    transition t2 {
+        NtAllocateVirtualMemory(processHandle, baseAddress, _, size, _, _)
+    }
+
+    transition t3 {
+        NtWriteVirtualMemory(processHandle, address, _, _, _)
+        where
+            address in [baseAddress..(baseAddress+size)]
+    }
+
+    transition t4 {
+        NtGetContextThread(threadHandle, _)
+    }
+
+    transition t5 {
+        NtSetContextThread(threadHandle, _)
+    }
+
+    transition t6 {
+        NtResumeThread(threadHandle, _)
+    }
+
+    t0 -> p0 -> t1 -> p1 -> t5
+    t0 -> p2 -> t2 -> p3 -> t3 -> p4 -> t5
+    t0 -> p5 -> t4 -> p6 -> t5
+    t5 -> p7 -> t6 -> p8
+}

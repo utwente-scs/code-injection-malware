@@ -1,0 +1,12 @@
+behavior "Application Shim Injection" {
+    place p0 accepting
+
+    transition t0 {
+        NtSetValueKey(key, name, value)
+        where
+            "SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\APPCOMPATFLAGS\\" in key
+            ("CUSTOM" in key) or ("INSTALLEDSDB" in key)
+    }
+
+    t0 -> p0
+}

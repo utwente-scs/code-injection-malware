@@ -1,0 +1,58 @@
+behavior "APC DLL Injection" {
+
+    place [
+        opened_thread 
+        opened_process
+        allocated_path
+        written_path
+        kernelbase
+    ]
+    place done accepting
+
+    transition t0 {
+        NtOpenThread(threadHandle, _, _, _)
+    }
+
+    transition t1 {
+        NtOpenProcess(processHandle, _, _, _)
+    }
+
+    transition t2 {
+        NtCreateUserProcess(processHandle, threadHandle, _, _, _, _, _, _, _, _, _)
+    }
+
+    transition t3 {
+        NtAllocateVirtualMemory(processHandle, allocAddress, _, allocSize, _, _)
+    }
+
+    transition t4 {
+        NtWriteVirtualMemory(processHandle, writeAddress, _, _, _)
+        where
+            writeAddress in [allocAddress..(allocAddress + allocSize)]
+    }
+    
+    transition t5 {
+        dll_loaded(name, baseAddress)
+        where
+            ("kernel32.dll" in name) or ("ntdll.dll" in name)
+    }
+
+    transition t6 {
+        NtQueueApcThread(threadHandle, _, entry, address, _)
+        where
+            address in [allocAddress..(allocAddress + allocSize)]
+            entry in [baseAddress..(baseAddress + 0x300000)]
+    }
+
+    t0 -> opened_thread
+    t1 -> opened_process
+    t2 -> opened_thread
+    t2 -> opened_process
+    
+    opened_thread -> t6 
+    opened_process -> t3 -> allocated_path -> t4 -> written_path -> t6
+    
+    t5 -> kernelbase -> t6
+    
+    t6 -> done
+}

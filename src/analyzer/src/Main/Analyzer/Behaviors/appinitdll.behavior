@@ -1,0 +1,21 @@
+behavior "AppInit DLL Injection" {
+
+    place p0 accepting
+
+    transition t0 {
+        NtSetValueKey(key, name, value)
+        where
+            "\\REGISTRY\\MACHINE\\SOFTWARE\\SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\WINDOWS" in key
+            "AppInit_DLLs" in name
+    }
+
+    transition t1 {
+        NtSetValueKey(key, name, value)
+        where
+            "\\REGISTRY\\MACHINE\\SOFTWARE\\SOFTWARE\\WOW6432NODE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\WINDOWS" in key
+            "AppInit_DLLs" in name
+    }
+
+    t0 -> p0
+    t1 -> p0
+}

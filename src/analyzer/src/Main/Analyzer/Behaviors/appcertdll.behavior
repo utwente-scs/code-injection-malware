@@ -1,0 +1,13 @@
+behavior "AppCert DLL Injection" {
+
+    place p0 accepting
+
+    transition t0 {
+        NtSetValueKey(key, name, value)
+        where
+            "\\REGISTRY\\MACHINE\\SYSTEM\\" in key
+            "CONTROL\\SESSION MANAGER\\APPCERTDLLS" in key
+    }
+
+    t0 -> p0
+}

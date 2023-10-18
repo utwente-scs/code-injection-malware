@@ -1,0 +1,48 @@
+behavior "APC Shell Injection" {
+    
+    place [
+        opened_thread
+        opened_process
+        allocated
+        written
+    ]
+    place done accepting
+
+    transition t0 {
+        NtOpenThread(threadHandle, _, _, _)
+    }
+
+    transition t1 {
+        NtOpenProcess(processHandle, _, _, _)
+    }
+    
+    transition t2 {
+        NtCreateUserProcess(processHandle, threadHandle, _, _, _, _, _, _, _, _, _)
+    }
+    
+    transition t3 {
+        NtAllocateVirtualMemory(processHandle, allocAddress, _, allocSize, _, _)
+    }
+
+    transition t4 {
+        NtWriteVirtualMemory(processHandle, writeAddress, _, _, _)
+        where
+            writeAddress in [allocAddress..(allocAddress + allocSize)]
+    }
+
+    transition t5 {
+        NtQueueApcThread(threadHandle, _, address, _, _)
+        where
+            address in [allocAddress..(allocAddress + allocSize)]
+    }
+
+    t0 -> opened_thread
+    t1 -> opened_process
+    t2 -> opened_thread
+    t2 -> opened_process
+    
+    opened_thread -> t5
+    opened_process -> t3 -> allocated -> t4 -> written -> t5
+    
+    t5 -> done
+}

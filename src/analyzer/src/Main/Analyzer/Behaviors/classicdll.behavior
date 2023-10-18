@@ -1,0 +1,63 @@
+behavior "Classic DLL injection" {
+
+    place [
+        process_handle 
+        allocated
+        written_path
+        kernelbase
+    ]
+    
+    place done accepting
+
+    transition t2 {
+        NtOpenProcess(processHandle, _, _, _)
+    }
+    
+    transition t3 {
+        NtCreateUserProcess(processHandle, _, _, _, _, _, _, _, _, _, _)
+    }
+
+    transition t4 {
+        NtAllocateVirtualMemory(processHandle, allocAddress, _, allocSize, _, _)
+    }
+
+    transition t5 {
+        NtWriteVirtualMemory(processHandle, writeAddress, _, _, _)
+        where
+            writeAddress in [allocAddress..(allocAddress + allocSize)]
+    }
+    
+    transition t6 {
+        dll_loaded(name, baseAddress)
+        where
+            ("kernel32.dll" in name) or ("ntdll.dll" in name)
+    }
+
+    transition t7 {
+        CreateRemoteThread(processHandle, _, _, entry, parameter, _, _)
+        where
+            parameter in [allocAddress..(allocAddress + allocSize)]
+            entry in [baseAddress..(baseAddress + 0x300000)]
+    }
+
+    transition t8 {
+        NtCreateThreadEx(_, _, _, processHandle, entry, parameter, _, _, _, _, _)
+        where
+            parameter in [allocAddress..(allocAddress + allocSize)]
+            entry in [baseAddress..(baseAddress + 0x300000)]
+    }
+    
+    t2 -> process_handle
+    t3 -> process_handle
+    process_handle -> t4 -> allocated -> t5 -> written_path
+    
+    t6 -> kernelbase
+    
+    written_path -> t7
+    written_path -> t8
+    kernelbase -> t7
+    kernelbase -> t8
+    
+    t7 -> done
+    t8 -> done
+}

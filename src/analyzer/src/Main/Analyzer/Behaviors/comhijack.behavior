@@ -1,0 +1,13 @@
+behavior "COM Hijack DLL Injection" {
+    place p0 accepting
+
+    transition t0 {
+        NtSetValueKey(key, name, value)
+        where
+            "CLSID" in key
+            "INPROCSERVER32" in key
+            "(Default)" in name
+    }
+
+    t0 -> p0
+}

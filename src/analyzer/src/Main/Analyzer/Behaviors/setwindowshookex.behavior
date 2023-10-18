@@ -1,0 +1,35 @@
+behavior "SetWindowsHookEx DLL Injection" {
+    place p0
+    place p1 accepting
+
+    transition t0 {
+        NtUserSetWindowsHookEx(_, callbackDll, threadId, _, _, _ , _)
+        in
+            process processId
+        where
+            (callbackDll in "") == false
+    }
+
+    transition t1 {
+        LdrLoadDll(name, path)
+        in
+            process processId2
+            thread threadId
+        where
+            (callbackDll in name) or (callbackDll in path)
+            processId2 != processId
+    }
+
+    transition t2 {
+        LdrLoadDll(_, _, name, _)
+        in
+            process processId2
+            thread threadId
+        where
+            name in callbackDll
+            processId2 != processId
+    }
+
+    t0 -> p0 -> t1 -> p1
+    p0 -> t2 -> p1
+}

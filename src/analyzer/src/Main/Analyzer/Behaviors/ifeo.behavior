@@ -1,0 +1,21 @@
+behavior "Image File Execution Options" {
+
+    place p0 accepting
+
+    transition t0 {
+        NtSetValueKey(key, name, value)
+        where
+            "\\REGISTRY\\MACHINE\\SOFTWARE\\SOFTWARE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\IMAGE FILE EXECUTION OPTIONS" in key
+            "Debugger" in name
+    }
+
+    transition t1 {
+        NtSetValueKey(key, name, value)
+        where
+            "\\REGISTRY\\MACHINE\\SOFTWARE\\SOFTWARE\\WOW6432NODE\\MICROSOFT\\WINDOWS NT\\CURRENTVERSION\\IMAGE FILE EXECUTION OPTIONS" in key
+            "Debugger" in name
+    }
+
+    t0 -> p0
+    t1 -> p0
+}

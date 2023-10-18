@@ -1,0 +1,62 @@
+behavior "Thread Hijacking" {
+
+    place [
+        proc_obtained
+        thread_opened
+        thread_obtained
+        context_obtained
+        context_updated
+        allocated
+        written
+    ]
+    
+    place done accepting
+    
+    transition t0 {
+        NtOpenProcess(processHandle, _, _, _)
+    }
+    
+    transition t1 {
+        NtOpenThread(threadHandle, _)
+    }
+
+    transition t2 {
+        NtSuspendThread(threadHandle, _)
+    }
+    
+    transition t3 {
+        NtCreateUserProcess(processHandle, threadHandle, _, _, _, _, _, _, _, _, _)
+    }
+
+    transition t4 {
+        NtAllocateVirtualMemory(processHandle, baseAddress, _, size, _, _)
+    }
+
+    transition t5 {
+        NtWriteVirtualMemory(processHandle, address, _, _, _)
+        where
+            address in [baseAddress..(baseAddress+size)]
+    }
+
+    transition t6 {
+        NtGetContextThread(threadHandle, _)
+    }
+
+    transition t7 {
+        NtSetContextThread(threadHandle, _)
+    }
+
+    transition t8 {
+        NtResumeThread(threadHandle, _)
+    }
+
+    t0 -> proc_obtained
+    t1 -> thread_opened -> t2 -> thread_obtained
+    t3 -> proc_obtained
+    t3 -> thread_obtained
+    
+    proc_obtained -> t4 -> allocated -> t5 -> written -> t8
+    thread_obtained -> t6 -> context_obtained -> t7 -> context_updated -> t8
+    
+    t8 -> done
+}

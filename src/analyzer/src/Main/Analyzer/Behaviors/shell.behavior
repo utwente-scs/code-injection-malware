@@ -1,0 +1,45 @@
+behavior "Generic Shell Injection" {
+    place [
+        process_handle 
+        allocated 
+        written
+    ]
+    place done accepting
+
+    transition t0 {
+        NtOpenProcess(handle, _, _, _)
+    }
+
+    transition t1 {
+        NtCreateUserProcess(handle, _, _, _, _, _, _, _, _, _, _)
+    }
+    
+    transition t2 {
+        NtAllocateVirtualMemory(handle, allocAddress, _, allocSize, _, _)
+    }
+
+    transition t3 {
+        NtWriteVirtualMemory(handle, writeAddress, _, _, _)
+        where
+            writeAddress in [allocAddress..(allocAddress + allocSize)]
+    }
+
+    transition t4 {
+        CreateRemoteThread(handle, _, _, startAddress, _, _, _)
+        where
+            startAddress in [allocAddress..(allocAddress + allocSize)]
+    }
+
+    transition t5 {
+        NtCreateThreadEx(_, _, _, handle, startAddress, _, _, _, _, _, _)
+        where
+            startAddress in [allocAddress..(allocAddress + allocSize)]
+    }
+
+    t0 -> process_handle
+    t1 -> process_handle
+    process_handle -> t2 -> allocated -> t3 -> written
+    
+    written -> t4 -> done
+    written -> t5 -> done
+}
